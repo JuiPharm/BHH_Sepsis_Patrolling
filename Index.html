@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sepsis First hour bundle</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; line-height: 1.4; }
+    .card { max-width: 920px; padding: 18px; border: 1px solid #ddd; border-radius: 12px; }
+    label { display:block; margin: 10px 0 6px; font-weight: 700; }
+    input, select { width: 100%; max-width: 680px; padding: 10px; border: 1px solid #ccc; border-radius: 10px; }
+    h1,h2 { margin: 0 0 8px; }
+    h2 { margin-top: 18px; }
+    .muted { color:#666; font-size: .95rem; }
+    .row { margin: 12px 0; }
+    .section { margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee; }
+    .qitem { margin: 10px 0; padding: 12px; border: 1px dashed #ccc; border-radius: 12px; }
+    .actions { display:flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+    button { padding: 10px 16px; border-radius: 12px; border: 0; cursor: pointer; font-weight: 800; }
+    button.secondary { font-weight: 700; }
+    pre { background:#f7f7f7; padding:12px; border-radius: 12px; overflow:auto; }
+    .error { color: #b00020; font-weight: 800; }
+    .ok { color: #0b6b0b; font-weight: 800; }
+    .adminBox { margin-top: 8px; padding: 12px; border: 1px solid #ddd; border-radius: 12px; background: #fff; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>🦠 Sepsis First hour bundle</h1>
+    <div class="muted">แบบประเมิน qSOFA + Sepsis First hour bundle</div>
+
+    <div class="section">
+      <h2>ข้อมูลผู้ป่วย</h2>
+
+      <div class="row">
+        <label for="hn">HN ผู้ป่วย <span class="muted">(รูปแบบ 07-YY-xxxxxx)</span></label>
+        <input id="hn" placeholder="ตัวอย่าง: 07-26-123456" autocomplete="off" />
+        <div id="hnErr" class="error" style="display:none;"></div>
+      </div>
+
+      <div class="row">
+        <label for="dept">แผนก</label>
+        <select id="dept"></select>
+        <div class="muted">รายการแผนกโหลดจาก Backend (Script Properties)</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>qSOFA (Required)</h2>
+      <div class="muted">กรุณาตอบครบทั้ง 3 ข้อ</div>
+
+      <div class="qitem">
+        <div><b>1) Respiratory rate &gt;= 22 /min</b></div>
+        <select class="qsofa" data-q="Respiratory rate >= 22 /min">
+          <option value="">-- เลือก --</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+
+      <div class="qitem">
+        <div><b>2) The Glasgow Coma Scale/Score (GCS) &lt; 15</b></div>
+        <select class="qsofa" data-q="The Glasgow Coma Scale/Score (GCS) < 15">
+          <option value="">-- เลือก --</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+
+      <div class="qitem">
+        <div><b>3) Systolic Blood Pressure &lt;/= 100 mmHg</b></div>
+        <select class="qsofa" data-q="Systolic Blood Pressure </= 100 mmHg">
+          <option value="">-- เลือก --</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+
+      <div id="qsofaErr" class="error" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+      <h2>Sepsis First hour bundle (Required)</h2>
+      <div class="muted">ทุกข้อเป็น Required และเลือกได้ 1 คำตอบ: Comply / Not comply</div>
+      <div id="bundle"></div>
+      <div id="bundleErr" class="error" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+      <div class="actions">
+        <button id="submitBtn" type="button">Send Alert</button>
+        <button id="resetBtn" class="secondary" type="button">Reset</button>
+      </div>
+
+      <pre id="status" aria-live="polite"></pre>
+      <div class="muted">หมายเหตุ: หน้าเว็บเป็น static (GitHub Pages) — ส่ง Telegram + Audit log ผ่าน Apps Script backend</div>
+    </div>
+
+    <!-- ✅ Admin moved to the bottom -->
+    <div class="section">
+      <h2>Admin (เพิ่มแผนก)</h2>
+      <div class="adminBox">
+        <div class="muted">เพิ่มแผนกได้เมื่อใส่รหัส Admin ถูกต้อง</div>
+        <div class="actions">
+          <input id="adminCode" placeholder="Admin code" style="max-width:220px;" />
+          <input id="newDept" placeholder="ชื่อแผนกใหม่ (เช่น Ward 13)" style="max-width:320px;" />
+          <button id="addDeptBtn" class="secondary" type="button">Add Department</button>
+        </div>
+        <div id="adminStatus" class="muted"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
