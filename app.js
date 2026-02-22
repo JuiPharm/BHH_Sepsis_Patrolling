@@ -1,14 +1,15 @@
-// Frontend for GitHub Pages (static)
-// Calls Google Apps Script Web App (backend) via POST JSON body (no content-type header to avoid preflight)
+// GitHub Pages frontend (static)
+// Sends POST body JSON (no Content-Type header) to avoid Apps Script CORS preflight issues.
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzJKK_e-sacJdHwrH39jx9OGGZglHPADQnwT855KL4yMr31DXqcEdqN5ff3c7k5ojMR/exec";
 
+// Bundle 5 ข้อ (ข้อ 4-5 เพิ่ม "ผู้ป่วยไม่เข้าเกณฑ์")
 const bundleItems = [
-  "ผู้ป่วยได้รับส่งตรวจ Lactate ภายใน 3 ชั่วโมง หลังวินิจฉัย Sepsis",
-  "ผู้ป่วยได้รับการส่งเลือดเพาะเชื้อ (Hemoculture) ก่อนให้ยาปฏิชีวนะ",
-  "ผู้ป่วยได้รับยาปฏิชีวนะที่ครอบคลุมเชื้อก่อโรค (Board spectrum antibiotics) ภายใน 1 ชั่วโมง",
-  "ผู้ป่วยได้รับสารน้ำ ทางหลอดเลือด 30 ml/kg balanced crystalloid in 3 hours for hypotension.",
-  "ผู้ปวยได้รับยา Vasopressors (eg. Norepinephrine) เพื่อให้ค่า MAP >/= 65 mmHg ภายใน 1 ชั่วโมง",
+  { text: "ผู้ป่วยได้รับส่งตรวจ Lactate ภายใน 3 ชั่วโมง หลังวินิจฉัย Sepsis", allowNA: false },
+  { text: "ผู้ป่วยได้รับการส่งเลือดเพาะเชื้อ (Hemoculture) ก่อนให้ยาปฏิชีวนะ", allowNA: false },
+  { text: "ผู้ป่วยได้รับยาปฏิชีวนะที่ครอบคลุมเชื้อก่อโรค (Board spectrum antibiotics) ภายใน 1 ชั่วโมง", allowNA: false },
+  { text: "ผู้ป่วยได้รับสารน้ำทางหลอดเลือด 30 ml/kg balanced crystalloid in 3 hours for hypotension.", allowNA: true },
+  { text: "ผู้ปวยได้รับยา Vasopressors (eg. Norepinephrine) เพื่อให้ค่า MAP >/= 65 mmHg ภายใน 1 ชั่วโมง", allowNA: true },
 ];
 
 function escapeHtml(s) {
@@ -70,19 +71,19 @@ async function loadDepartments() {
       return;
     }
   } catch (_) {}
-
-  renderDepartments(["ICU","Ward 12","Ward 11","Ward 10","Ward 9","Ward 8","Ward 7","Ward 6","Ward 5","LR","ER","OPD MED"]);
+  renderDepartments(["ICU","ER","Ward"]);
 }
 
 function renderBundle() {
   const el = document.getElementById("bundle");
-  el.innerHTML = bundleItems.map((text, idx) => `
+  el.innerHTML = bundleItems.map((it, idx) => `
     <div class="qitem">
-      <div><b>${idx + 1}) ${escapeHtml(text)}</b></div>
-      <select class="bundle" data-q="${escapeHtml(text)}">
+      <div class="qtitle">${idx + 1}) ${escapeHtml(it.text)}</div>
+      <select class="bundle" data-q="${escapeHtml(it.text)}">
         <option value="">-- เลือก --</option>
         <option value="Comply">Comply</option>
-        <option value="Not comply">Not comply</option>
+        <option value="Not Comply">Not Comply</option>
+        ${it.allowNA ? `<option value="ผู้ป่วยไม่เข้าเกณฑ์">ผู้ป่วยไม่เข้าเกณฑ์</option>` : ``}
       </select>
     </div>
   `).join("");
@@ -120,13 +121,23 @@ async function onSubmit() {
 
   const { bundle, bundleQuestions } = collectBundle();
   if (bundle.some(v => !v)) {
-    showError("bundleErr", "กรุณาตอบ First hour bundle ให้ครบทุกข้อ (Comply/Not comply)");
+    showError("bundleErr", "กรุณาตอบ First hour bundle ให้ครบทุกข้อ");
     showStatus("Please fix errors.", false);
     return;
   }
 
+  // Allow: Comply / Not Comply / ผู้ป่วยไม่เข้าเกณฑ์
+  const allowed = new Set(["Comply","Not Comply","ผู้ป่วยไม่เข้าเกณฑ์"]);
+  if (bundle.some(a => !allowed.has(a))) {
+    showError("bundleErr", "คำตอบ bundle ต้องเป็น Comply / Not Comply / ผู้ป่วยไม่เข้าเกณฑ์");
+    showStatus("Please fix errors.", false);
+    return;
+  }
+
+  const payload = { hn, department, qsofa, qsofaQuestions, bundle, bundleQuestions };
+
   try {
-    const { res, data, raw } = await postJSON({ hn, department, qsofa, qsofaQuestions, bundle, bundleQuestions });
+    const { res, data, raw } = await postJSON(payload);
     if (!res.ok || data.ok !== true) {
       showStatus(`Failed: ${res.status}\n${data.error || raw || "Unknown error"}`, false);
       return;
@@ -174,7 +185,6 @@ function onReset() {
   showStatus("");
 }
 
-// init
 renderBundle();
 loadDepartments();
 
