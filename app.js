@@ -1,3 +1,6 @@
+// Frontend for GitHub Pages (static)
+// Calls Google Apps Script Web App (backend) via POST JSON body (no content-type header to avoid preflight)
+
 const API_URL = "https://script.google.com/macros/s/AKfycbzJKK_e-sacJdHwrH39jx9OGGZglHPADQnwT855KL4yMr31DXqcEdqN5ff3c7k5ojMR/exec";
 
 const bundleItems = [
@@ -24,9 +27,7 @@ function setVisible(el, visible) { el.style.display = visible ? "" : "none"; }
 
 function showStatus(text, ok = null) {
   const el = document.getElementById("status");
-  if (ok === true) el.className = "ok";
-  else if (ok === false) el.className = "error";
-  else el.className = "";
+  el.className = ok === true ? "ok" : ok === false ? "error" : "";
   el.textContent = text;
 }
 
@@ -43,18 +44,22 @@ function showError(elId, msg) {
 }
 
 async function postJSON(payload) {
-  // ส่งเป็น "simple request" ลดปัญหา preflight
   const res = await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 
-  // บางเคส Apps Script ตอบกลับเป็น html/error page → json() จะ fail
   const text = await res.text();
   let data = {};
   try { data = JSON.parse(text); } catch (_) {}
-
   return { res, data, raw: text };
+}
+
+function renderDepartments(departments) {
+  const el = document.getElementById("dept");
+  el.innerHTML = departments
+    .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
+    .join("");
 }
 
 async function loadDepartments() {
@@ -67,13 +72,6 @@ async function loadDepartments() {
   } catch (_) {}
 
   renderDepartments(["ICU","Ward 12","Ward 11","Ward 10","Ward 9","Ward 8","Ward 7","Ward 6","Ward 5","LR","ER","OPD MED"]);
-}
-
-function renderDepartments(departments) {
-  const el = document.getElementById("dept");
-  el.innerHTML = departments
-    .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
-    .join("");
 }
 
 function renderBundle() {
@@ -127,10 +125,8 @@ async function onSubmit() {
     return;
   }
 
-  const payload = { hn, department, qsofa, qsofaQuestions, bundle, bundleQuestions };
-
   try {
-    const { res, data, raw } = await postJSON(payload);
+    const { res, data, raw } = await postJSON({ hn, department, qsofa, qsofaQuestions, bundle, bundleQuestions });
     if (!res.ok || data.ok !== true) {
       showStatus(`Failed: ${res.status}\n${data.error || raw || "Unknown error"}`, false);
       return;
@@ -178,6 +174,7 @@ function onReset() {
   showStatus("");
 }
 
+// init
 renderBundle();
 loadDepartments();
 
