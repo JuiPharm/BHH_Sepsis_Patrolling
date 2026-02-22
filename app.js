@@ -1,7 +1,5 @@
-// ใส่ URL ของ Apps Script Web App
 const API_URL = "https://script.google.com/macros/s/AKfycbzJKK_e-sacJdHwrH39jx9OGGZglHPADQnwT855KL4yMr31DXqcEdqN5ff3c7k5ojMR/exec";
 
-// Bundle 5 ข้อ (Required, answers = Comply / Not comply เท่านั้น)
 const bundleItems = [
   "ผู้ป่วยได้รับส่งตรวจ Lactate ภายใน 3 ชั่วโมง หลังวินิจฉัย Sepsis",
   "ผู้ป่วยได้รับการส่งเลือดเพาะเชื้อ (Hemoculture) ก่อนให้ยาปฏิชีวนะ",
@@ -10,11 +8,14 @@ const bundleItems = [
   "ผู้ปวยได้รับยา Vasopressors (eg. Norepinephrine) เพื่อให้ค่า MAP >/= 65 mmHg ภายใน 1 ชั่วโมง",
 ];
 
-function escapeHtml(s){
-  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
-// HN: 07-YY-xxxxxx
 function validateHN(hn) {
   return /^07-\d{2}-\d{6}$/.test(hn);
 }
@@ -41,28 +42,38 @@ function showError(elId, msg) {
   setVisible(el, true);
 }
 
+async function postJSON(payload) {
+  // ส่งเป็น "simple request" ลดปัญหา preflight
+  const res = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  // บางเคส Apps Script ตอบกลับเป็น html/error page → json() จะ fail
+  const text = await res.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch (_) {}
+
+  return { res, data, raw: text };
+}
+
 async function loadDepartments() {
-  // ดึง departments จาก Script Properties ผ่าน backend
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "get_departments" }),
-    });
-    const data = await res.json().catch(() => ({}));
+    const { res, data } = await postJSON({ action: "get_departments" });
     if (res.ok && data.ok === true && Array.isArray(data.departments) && data.departments.length) {
       renderDepartments(data.departments);
       return;
     }
   } catch (_) {}
 
-  // fallback ถ้า backend ไม่ตอบ (กันหน้าเว็บว่าง)
   renderDepartments(["ICU","Ward 12","Ward 11","Ward 10","Ward 9","Ward 8","Ward 7","Ward 6","Ward 5","LR","ER","OPD MED"]);
 }
 
 function renderDepartments(departments) {
   const el = document.getElementById("dept");
-  el.innerHTML = departments.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
+  el.innerHTML = departments
+    .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
+    .join("");
 }
 
 function renderBundle() {
@@ -81,18 +92,12 @@ function renderBundle() {
 
 function collectQsofa() {
   const selects = [...document.querySelectorAll(".qsofa")];
-  return {
-    qsofa: selects.map(s => s.value),
-    qsofaQuestions: selects.map(s => s.dataset.q)
-  };
+  return { qsofa: selects.map(s => s.value), qsofaQuestions: selects.map(s => s.dataset.q) };
 }
 
 function collectBundle() {
   const selects = [...document.querySelectorAll(".bundle")];
-  return {
-    bundle: selects.map(s => s.value),
-    bundleQuestions: selects.map(s => s.dataset.q)
-  };
+  return { bundle: selects.map(s => s.value), bundleQuestions: selects.map(s => s.dataset.q) };
 }
 
 async function onSubmit() {
@@ -125,20 +130,14 @@ async function onSubmit() {
   const payload = { hn, department, qsofa, qsofaQuestions, bundle, bundleQuestions };
 
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json().catch(() => ({}));
+    const { res, data, raw } = await postJSON(payload);
     if (!res.ok || data.ok !== true) {
-      showStatus(`Failed: ${res.status} ${JSON.stringify(data)}`, false);
+      showStatus(`Failed: ${res.status}\n${data.error || raw || "Unknown error"}`, false);
       return;
     }
     showStatus("Done ✅ (sent + audited)", true);
   } catch (e) {
-    showStatus(`Error: ${e && e.message ? e.message : e}`, false);
+    showStatus(`Failed to fetch: ${e?.message || e}`, false);
   }
 }
 
@@ -155,18 +154,11 @@ async function onAddDept() {
   }
 
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "add_department", adminCode, newDept }),
-    });
-
-    const data = await res.json().catch(() => ({}));
+    const { res, data, raw } = await postJSON({ action: "add_department", adminCode, newDept });
     if (!res.ok || data.ok !== true) {
-      adminStatus.textContent = `Add failed: ${data && data.error ? data.error : JSON.stringify(data)}`;
+      adminStatus.textContent = `Add failed: ${data.error || raw || "Unknown error"}`;
       return;
     }
-
     if (Array.isArray(data.departments)) {
       renderDepartments(data.departments);
       document.getElementById("dept").value = newDept;
@@ -174,7 +166,7 @@ async function onAddDept() {
     adminStatus.textContent = "Added ✅";
     document.getElementById("newDept").value = "";
   } catch (e) {
-    adminStatus.textContent = `Error: ${e && e.message ? e.message : e}`;
+    adminStatus.textContent = `Failed to fetch: ${e?.message || e}`;
   }
 }
 
