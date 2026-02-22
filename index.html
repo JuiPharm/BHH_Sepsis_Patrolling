@@ -3,110 +3,254 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sepsis First hour bundle</title>
+  <title>BHH Sepsis Patrolling</title>
+
+  <!-- prevent favicon 404 -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2278%22>🧫</text></svg>">
+
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; line-height: 1.4; }
-    .card { max-width: 920px; padding: 18px; border: 1px solid #ddd; border-radius: 12px; }
-    label { display:block; margin: 10px 0 6px; font-weight: 700; }
-    input, select { width: 100%; max-width: 680px; padding: 10px; border: 1px solid #ccc; border-radius: 10px; }
-    h1,h2 { margin: 0 0 8px; }
-    h2 { margin-top: 18px; }
-    .muted { color:#666; font-size: .95rem; }
-    .row { margin: 12px 0; }
-    .section { margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee; }
-    .qitem { margin: 10px 0; padding: 12px; border: 1px dashed #ccc; border-radius: 12px; }
-    .actions { display:flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
-    button { padding: 10px 16px; border-radius: 12px; border: 0; cursor: pointer; font-weight: 800; }
-    button.secondary { font-weight: 700; }
-    pre { background:#f7f7f7; padding:12px; border-radius: 12px; overflow:auto; }
-    .error { color: #b00020; font-weight: 800; }
-    .ok { color: #0b6b0b; font-weight: 800; }
-    .adminBox { margin-top: 8px; padding: 12px; border: 1px solid #ddd; border-radius: 12px; background: #fff; }
+    :root{
+      --bg1:#f7fafc;
+      --bg2:#eef2ff;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e2e8f0;
+      --shadow: 0 14px 40px rgba(2, 6, 23, .10);
+      --shadow2: 0 6px 18px rgba(2, 6, 23, .08);
+      --radius: 18px;
+      --radius2: 14px;
+      --ok:#0b6b0b;
+      --err:#b00020;
+      --primary:#2563eb;
+      --primary2:#1d4ed8;
+      --ghost:#f1f5f9;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 10% 10%, var(--bg2), transparent 60%),
+        radial-gradient(900px 500px at 90% 30%, #e0f2fe, transparent 60%),
+        linear-gradient(180deg, var(--bg1), #ffffff 60%);
+      padding: 22px;
+    }
+    .container{ max-width: 980px; margin: 0 auto; }
+    .topbar{ display:flex; gap:14px; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+    .brand{ display:flex; align-items:center; gap:12px; min-width: 0; }
+    .logo{
+      width:52px;height:52px;border-radius:14px;background:#fff;
+      box-shadow:var(--shadow2); border:1px solid var(--line); overflow:hidden;
+      display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+    }
+    .logo img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .brandText{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .title{ font-size: 1.25rem; font-weight: 900; letter-spacing: .2px; line-height: 1.1; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .subtitle{ color: var(--muted); font-size: .95rem; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .chip{
+      display:flex; align-items:center; gap:8px; padding: 10px 12px; border-radius: 999px;
+      border: 1px solid var(--line); background: rgba(255,255,255,.75); box-shadow: var(--shadow2);
+      color: var(--muted); font-size:.92rem; flex: 0 0 auto;
+    }
+    .card{
+      background: rgba(255,255,255,.85);
+      border: 1px solid rgba(226,232,240,.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(8px);
+    }
+    .cardHeader{
+      padding: 18px 18px 10px;
+      border-bottom: 1px solid rgba(226,232,240,.7);
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.75));
+    }
+    .cardBody{ padding: 18px; }
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 780px){
+      .topbar{ flex-direction: column; align-items: stretch; }
+      .chip{ justify-content:center; }
+      .grid2{ grid-template-columns: 1fr; }
+      body{ padding: 14px; }
+    }
+    .section{ margin-top: 16px; padding-top: 14px; border-top: 1px dashed rgba(148,163,184,.45); }
+    .sectionTitle{ display:flex; align-items:center; justify-content:space-between; gap: 12px; margin-bottom: 10px; }
+    .sectionTitle h2{ margin:0; font-size: 1.05rem; font-weight: 900; letter-spacing: .15px; }
+    .hint{ color: var(--muted); font-size: .92rem; margin-top: 2px; }
+    label{ display:block; font-weight: 800; margin: 0 0 8px; }
+    .field{ display:flex; flex-direction:column; gap:8px; }
+    input, select{
+      width:100%; padding: 12px 12px; border-radius: 14px; border: 1px solid rgba(148,163,184,.55);
+      background: rgba(255,255,255,.9); outline: none;
+      transition: box-shadow .15s ease, border-color .15s ease, transform .05s ease;
+      font-size: 1rem;
+    }
+    input:focus, select:focus{ border-color: rgba(37,99,235,.55); box-shadow: 0 0 0 4px rgba(37,99,235,.15); }
+    .qitem{
+      padding: 14px; border-radius: var(--radius2); border: 1px solid rgba(226,232,240,.9);
+      background: rgba(255,255,255,.75); box-shadow: 0 2px 10px rgba(2,6,23,.04); margin: 10px 0;
+    }
+    .qtitle{ font-weight: 850; margin-bottom: 10px; line-height: 1.25; }
+    .actions{ display:flex; flex-wrap: wrap; gap: 10px; align-items:center; margin-top: 14px; }
+    button{
+      border:0; border-radius: 14px; padding: 12px 16px; font-weight: 900; cursor:pointer;
+      transition: transform .05s ease, box-shadow .15s ease, background .15s ease; user-select:none;
+    }
+    button:active{ transform: translateY(1px); }
+    .btnPrimary{ background: linear-gradient(180deg, var(--primary), var(--primary2)); color:#fff; box-shadow: 0 10px 20px rgba(37,99,235,.25); }
+    .btnPrimary:hover{ box-shadow: 0 14px 26px rgba(37,99,235,.28); }
+    .btnGhost{ background: rgba(241,245,249,.9); color: #0f172a; border: 1px solid rgba(148,163,184,.45); }
+    .btnGhost:hover{ background: rgba(241,245,249,1); }
+    .status{
+      margin-top: 10px; padding: 12px; border-radius: 14px; border: 1px solid rgba(226,232,240,.9);
+      background: rgba(248,250,252,.85);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space: pre-wrap; overflow:auto; min-height: 52px;
+    }
+    .error{ color: var(--err); font-weight: 900; }
+    .ok{ color: var(--ok); font-weight: 900; }
+    .adminBox{
+      margin-top: 10px; padding: 14px; border-radius: var(--radius2);
+      border: 1px solid rgba(226,232,240,.9); background: rgba(255,255,255,.75);
+      box-shadow: 0 2px 10px rgba(2,6,23,.04);
+    }
+    .smallNote{ margin-top: 10px; color: var(--muted); font-size: .9rem; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; padding: 6px 10px; border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.35); background: rgba(255,255,255,.7);
+      color: var(--muted); font-size: .85rem; font-weight: 800;
+    }
   </style>
 </head>
 
 <body>
-  <div class="card">
-    <h1>🦠 Sepsis First hour bundle</h1>
-    <div class="muted">แบบประเมิน qSOFA + Sepsis First hour bundle</div>
-
-    <div class="section">
-      <h2>ข้อมูลผู้ป่วย</h2>
-
-      <div class="row">
-        <label for="hn">HN ผู้ป่วย <span class="muted">(รูปแบบ 07-YY-xxxxxx)</span></label>
-        <input id="hn" placeholder="ตัวอย่าง: 07-26-123456" autocomplete="off" />
-        <div id="hnErr" class="error" style="display:none;"></div>
-      </div>
-
-      <div class="row">
-        <label for="dept">แผนก</label>
-        <select id="dept"></select>
-        <div class="muted">รายการแผนกโหลดจาก Backend (Script Properties)</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2>qSOFA (Required)</h2>
-      <div class="muted">กรุณาตอบครบทั้ง 3 ข้อ</div>
-
-      <div class="qitem">
-        <div><b>1) Respiratory rate &gt;= 22 /min</b></div>
-        <select class="qsofa" data-q="Respiratory rate >= 22 /min">
-          <option value="">-- เลือก --</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </div>
-
-      <div class="qitem">
-        <div><b>2) The Glasgow Coma Scale/Score (GCS) &lt; 15</b></div>
-        <select class="qsofa" data-q="The Glasgow Coma Scale/Score (GCS) < 15">
-          <option value="">-- เลือก --</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </div>
-
-      <div class="qitem">
-        <div><b>3) Systolic Blood Pressure &lt;/= 100 mmHg</b></div>
-        <select class="qsofa" data-q="Systolic Blood Pressure </= 100 mmHg">
-          <option value="">-- เลือก --</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </div>
-
-      <div id="qsofaErr" class="error" style="display:none;"></div>
-    </div>
-
-    <div class="section">
-      <h2>Sepsis First hour bundle (Required)</h2>
-      <div class="muted">ทุกข้อเป็น Required และเลือกได้ 1 คำตอบ: Comply / Not comply</div>
-      <div id="bundle"></div>
-      <div id="bundleErr" class="error" style="display:none;"></div>
-    </div>
-
-    <div class="section">
-      <div class="actions">
-        <button id="submitBtn" type="button">Send Alert</button>
-        <button id="resetBtn" class="secondary" type="button">Reset</button>
-      </div>
-
-      <pre id="status" aria-live="polite"></pre>
-      <div class="muted">หมายเหตุ: หน้าเว็บเป็น static (GitHub Pages) — ส่ง Telegram + Audit log ผ่าน Apps Script backend</div>
-    </div>
-
-    <div class="section">
-      <h2>Admin (เพิ่มแผนก)</h2>
-      <div class="adminBox">
-        <div class="muted">เพิ่มแผนกได้เมื่อใส่รหัส Admin ถูกต้อง</div>
-        <div class="actions">
-          <input id="adminCode" placeholder="Admin code" style="max-width:220px;" />
-          <input id="newDept" placeholder="ชื่อแผนกใหม่ (เช่น Ward 13)" style="max-width:320px;" />
-          <button id="addDeptBtn" class="secondary" type="button">Add Department</button>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-label="Hospital logo">
+          <img
+            src="https://lh5.googleusercontent.com/d/1r7PM1ogHIbxskvcauVIYaQOfSHXWGncO"
+            alt="Logo"
+            referrerpolicy="no-referrer"
+          />
         </div>
-        <div id="adminStatus" class="muted"></div>
+        <div class="brandText">
+          <div class="title">BHH Sepsis Patrolling</div>
+          <div class="subtitle">qSOFA + Sepsis First-hour Bundle • ส่ง Telegram + Audit Log</div>
+        </div>
+      </div>
+      <div class="chip">
+        <span class="pill">Required</span>
+        <span>กรอกให้ครบก่อนส่ง</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cardHeader">
+        <div class="hint">ระบบคัดกรองและติดตามการทำ First-hour bundle เพื่อสนับสนุน workflow หน้างาน</div>
+      </div>
+
+      <div class="cardBody">
+
+        <div class="section" style="border-top:none; padding-top:0; margin-top:0;">
+          <div class="sectionTitle">
+            <h2>ข้อมูลผู้ป่วย</h2>
+            <span class="pill">HN format: 07-YY-xxxxxx</span>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label for="hn">HN ผู้ป่วย</label>
+              <input id="hn" placeholder="ตัวอย่าง: 07-26-123456" autocomplete="off" />
+              <div id="hnErr" class="error" style="display:none;"></div>
+            </div>
+
+            <div class="field">
+              <label for="dept">แผนก</label>
+              <select id="dept"></select>
+              <div class="hint">รายการแผนกโหลดจาก Backend (Script Properties)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="sectionTitle">
+            <h2>qSOFA (Required)</h2>
+            <span class="pill">ตอบ Yes/No</span>
+          </div>
+          <div class="hint">ตอบครบทั้ง 3 ข้อเพื่อคำนวณคะแนน qSOFA</div>
+
+          <div class="qitem">
+            <div class="qtitle">1) Respiratory rate ≥ 22 /min</div>
+            <select class="qsofa" data-q="Respiratory rate >= 22 /min">
+              <option value="">-- เลือก --</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+
+          <div class="qitem">
+            <div class="qtitle">2) The Glasgow Coma Scale/Score (GCS) &lt; 15</div>
+            <select class="qsofa" data-q="The Glasgow Coma Scale/Score (GCS) < 15">
+              <option value="">-- เลือก --</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+
+          <div class="qitem">
+            <div class="qtitle">3) Systolic Blood Pressure &lt;/= 100 mmHg</div>
+            <select class="qsofa" data-q="Systolic Blood Pressure </= 100 mmHg">
+              <option value="">-- เลือก --</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+
+          <div id="qsofaErr" class="error" style="display:none;"></div>
+        </div>
+
+        <div class="section">
+          <div class="sectionTitle">
+            <h2>Sepsis First-hour Bundle (Required)</h2>
+            <span class="pill">Comply / Not Comply / ผู้ป่วยไม่เข้าเกณฑ์</span>
+          </div>
+          <div class="hint">ทุกข้อเป็น Required • ข้อ 4–5 เลือก “ผู้ป่วยไม่เข้าเกณฑ์” ได้</div>
+
+          <div id="bundle"></div>
+          <div id="bundleErr" class="error" style="display:none;"></div>
+
+          <div class="actions">
+            <button id="submitBtn" type="button" class="btnPrimary">Send Alert</button>
+            <button id="resetBtn" type="button" class="btnGhost">Reset</button>
+          </div>
+
+          <div id="status" class="status" aria-live="polite"></div>
+
+          <div class="smallNote">
+            * หน้าเว็บเป็น static (GitHub Pages) — ระบบส่ง Telegram และบันทึก Audit Log ทำผ่าน Apps Script backend
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="sectionTitle">
+            <h2>Admin (เพิ่มแผนก)</h2>
+            <span class="pill">รหัส Admin: 520294</span>
+          </div>
+          <div class="adminBox">
+            <div class="hint">เพิ่มแผนกได้เมื่อใส่รหัส Admin ถูกต้อง</div>
+            <div class="actions">
+              <input id="adminCode" placeholder="Admin code" style="max-width:220px;" />
+              <input id="newDept" placeholder="ชื่อแผนกใหม่ (เช่น Ward 13)" style="max-width:320px;" />
+              <button id="addDeptBtn" type="button" class="btnGhost">Add Department</button>
+            </div>
+            <div id="adminStatus" class="hint" style="margin-top:8px;"></div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
